@@ -6,6 +6,7 @@ import { ListBoxArray } from "./ListBoxArray";
 import InputComponent from "./InputComponent";
 
 import {ethers, JsonRpcProvider} from "ethers";
+import BarLoader from 'react-spinners/BarLoader';
 
 
 interface WalletDialogContentProps {
@@ -21,13 +22,15 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
     const [activeTab, setActiveTab] = useState("balance");
 
 
-    const [selectedSender, setSelectedSender] = useState<string | null>(null);
-    const [selectedRecipient, setSelectedRecipient] = useState<string | null>(null);
+    const [selectedSender, setSelectedSender] = useState<IWallet | null>(null);
+    const [selectedRecipient, setSelectedRecipient] = useState<IWallet | null>(null);
     const [address, setAddress] = useState("");
     const [privateKey, setPrivateKey] = useState("");
     const [amount, setAmount] = useState("");
     const [balance, setBalance] = useState<string>("");
     const [activeBalance, setActiveBalance] = useState(false);
+    const [isBalanceLoading, setIsBalanceLoading] = useState(false);
+    const [isTransactionLoading, setIsTransactionLoading] = useState(false);
 
     const [selectedNetwork, setSelectedNetwork] = useState<INetwork | null>(null);
     const [networkList, setNetworkList] = useState<INetwork[]>([
@@ -68,28 +71,18 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
             return;
         }
 
-        const senderWallet = walletList.find(w => w.id === selectedSender);
-        if (!senderWallet) {
-            alert("Отправитель не найден в списке");
-            return;
-        }
-
-        const recipientWallet = walletList.find(w => w.id === selectedRecipient);
-        if (!recipientWallet) {
-            alert("Получатель не найден в списке");
-            return;
-        }
-
         try {
+            setIsTransactionLoading(true);
             const provider = new JsonRpcProvider(selectedNetwork.id);
-            const wallet = new ethers.Wallet(senderWallet.id, provider);
+            const wallet = new ethers.Wallet(selectedSender.id, provider);
 
             const tx = await wallet.sendTransaction({
-                to: recipientWallet.name,
+                to: selectedRecipient.name,
                 value: ethers.parseEther(amount),
             });
 
             await tx.wait(); // wait load transaction
+            setIsTransactionLoading(false);
             alert("Транзакция подтверждена.");
         } catch (err) {
             console.error("Ошибка транзакции:", err);
@@ -100,6 +93,7 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
 
 
     const getBalanceByWalletId = async (walletId: string) => {
+        setIsBalanceLoading(true);
         if (selectedNetwork) {
             const wallet = walletList.find(w => w.id === walletId);
             if (!wallet) {
@@ -114,7 +108,6 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
     };
 
     const getBalance = async (selectedWalletName: string, selectedNetworkId: string) => {
-        console.log(selectedNetworkId)
 
         try {
             const provider = new JsonRpcProvider(selectedNetworkId);
@@ -128,6 +121,8 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
         } catch (error) {
             console.error("Ошибка при получении баланса:", error);
             return null;
+        }finally {
+            setIsBalanceLoading(false); // Выключаем лоадер в любом случае
         }
     };
 
@@ -177,6 +172,8 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                                     data={networkList}
                                 />
                             </div>
+                        </div>
+                        <div className="mt-6 flex flex-wrap gap-5">
                             <div className="min-w-[12rem] flex-1">
                                 <ListBoxArray
                                     label="Wallet"
@@ -190,15 +187,23 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                                 />
                             </div>
                         </div>
-
-                        {balance !== "" && (
-                            <div className="mt-5 rounded-2.5xl border border-grey-high px-6 py-3 text-center text-lg desk-dialog:mx-32">
+                        {isBalanceLoading ? (
+                            <BarLoader color="#5ce5e2"
+                                       cssOverride={{
+                                           display: "block",
+                                           margin: "5vh auto",
+                                           borderColor: "red",
+                                       }}
+                                       size={10}
+                            />
+                        ) : balance !== "" ? (
+                            <div
+                                className="mt-5 rounded-2.5xl border border-grey-high px-6 py-3 text-center text-lg desk-dialog:mx-32">
                                 Balance: {" "}
-                                <span className="font-bold text-blue-high">{balance}</span>
-                                {/*{selectedNetwork.tokenName}*/}
+                                <span className="font-bold text-blue-high">{balance} </span>
+                                {selectedNetwork?.tokenName}
                             </div>
-                        )}
-
+                        ) : null}
 
                         {/* Footer */}
                         <footer className="mt-20 flex justify-center gap-x-7 absolute bottom-5 w-full left-0">
@@ -224,70 +229,17 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                     </>
                 )}
 
-                {/*{activeTab === "connect" && (*/}
-                {/*    <>*/}
-                {/*        <div className="mt-5 flex flex-wrap gap-5">*/}
-                {/*            <InputComponent*/}
-                {/*                label="Address"*/}
-                {/*                onChange={setAddress}*/}
-                {/*                placeholder="Enter Address"*/}
-                {/*                type="text"*/}
-                {/*                style="min-w-full"*/}
-                {/*            />*/}
-                {/*        </div>*/}
-
-                {/*        <div className="mt-5 flex flex-wrap gap-5">*/}
-                {/*            <InputComponent*/}
-                {/*                label="Private key"*/}
-                {/*                onChange={setPrivateKey}*/}
-                {/*                placeholder="Enter Private Key"*/}
-                {/*                type="text"*/}
-                {/*                style="min-w-full"*/}
-                {/*            />*/}
-                {/*        </div>*/}
-
-                {/*        <footer className="mt-20 flex justify-center gap-x-7 absolute bottom-5 w-full left-0">*/}
-                {/*            <button*/}
-                {/*                onClick={onClose}*/}
-                {/*                className="flex-1 rounded-half bg-grey-high px-16 py-3 text-dim-white hover:bg-blue-high/10 sm:flex-initial"*/}
-                {/*            >*/}
-                {/*                Cancel*/}
-                {/*            </button>*/}
-                {/*            <button*/}
-                {/*                onClick={() => {*/}
-                {/*                    if (!address || !privateKey) return;*/}
-
-                {/*                    const exists = walletList.some(*/}
-                {/*                        (item) => item.name === address || item.id === privateKey*/}
-                {/*                    );*/}
-
-                {/*                    if (!exists) {*/}
-                {/*                        setWalletList((prev) => [...prev, { name: address, id: privateKey }]);*/}
-                {/*                    }*/}
-
-                {/*                    setAddress("");*/}
-                {/*                    setPrivateKey("");*/}
-                {/*                }}*/}
-
-                {/*                className="flex-1 rounded-half bg-blue-high px-16 py-3 text-dim-black hover:bg-blue-high/80 sm:flex-initial"*/}
-                {/*            >*/}
-                {/*                Connect Wallet*/}
-                {/*            </button>*/}
-
-                {/*        </footer>*/}
-                {/*    </>*/}
-                {/*)}*/}
-
                 {activeTab === "transaction" && (
                     <>
                         <div className="min-w-[12rem] flex-1">
                             <ListBoxArray
                                 label="Network"
                                 placeholder="Select Network"
-                                selected={selectedNetwork}
-                                onChangeValue={setSelectedNetwork}
+                                initValue={selectedNetwork}
+                                onChangeValue={(value) => {
+                                    setSelectedNetwork(value);
+                                }}
                                 data={networkList}
-                                getLabel={(item) => item.name}
                             />
                         </div>
 
@@ -296,10 +248,9 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                                 <ListBoxArray
                                     label="Sender"
                                     placeholder="Select sender"
-                                    selected={selectedSender}
+                                    initValue={selectedSender}
                                     onChangeValue={setSelectedSender}
                                     data={walletList}
-                                    getLabel={(item) => item.name}
                                 />
                             </div>
                         </div>
@@ -309,10 +260,9 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                                 <ListBoxArray
                                     label="Recipient"
                                     placeholder="Select recipient"
-                                    selected={selectedRecipient}
+                                    initValue={selectedRecipient}
                                     onChangeValue={setSelectedRecipient}
                                     data={walletList}
-                                    getLabel={(item) => item.name}
                                 />
                             </div>
                         </div>
@@ -326,6 +276,17 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                                 style="min-w-full"
                             />
                         </div>
+
+                        {isTransactionLoading ? (
+                            <BarLoader color="#5ce5e2"
+                                       cssOverride={{
+                                           display: "block",
+                                           margin: "-8px auto",
+                                           borderColor: "red",
+                                       }}
+                                       size={10}
+                            />
+                        ) : null}
 
                         <footer className="mt-20 flex justify-center gap-x-7 absolute bottom-5 w-full left-0">
                             <button
