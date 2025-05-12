@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Dialog } from "@headlessui/react";
 
 import { DialogCrossButton } from "components/DialogCrossButton";
-import { ListBox } from "./ListBox";
 import { ListBoxArray } from "./ListBoxArray";
 import InputComponent from "./InputComponent";
 
@@ -29,8 +28,8 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
 
     const [walletList, setWalletList] = useState([
         {
-            name: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e",
-            id: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+            name: "0x2Bc3E1bb6C3C68720b392733993Bfef7334d3cbe",
+            id: "32f561a84be0480b20b69c8633b9ef48464e5bb863627209c502897e823427d3"
         },
         {
             name: "0x4cCE85dA450fC8D96B87671683B07297F13C13ff",
@@ -68,21 +67,26 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
             return;
         }
 
+        const recipientWallet = walletList.find(w => w.id === selectedRecipient);
+        if (!recipientWallet) {
+            alert("Получатель не найден в списке");
+            return;
+        }
+
         try {
             const provider = new JsonRpcProvider(selectedNetwork);
-            const wallet = new ethers.Wallet(senderWallet.id, provider); // id — это приватный ключ
+            const wallet = new ethers.Wallet(senderWallet.id, provider);
 
             const tx = await wallet.sendTransaction({
-                to: selectedRecipient,
-                value: ethers.parseEther(amount), // преобразование суммы в wei
+                to: recipientWallet.name,
+                value: ethers.parseEther(amount),
             });
 
-            console.log("Транзакция отправлена:", tx.hash);
-            alert(`Транзакция отправлена. Hash: ${tx.hash}`);
-            await tx.wait(); // Ждём подтверждение
+            await tx.wait(); // wait load transaction
             alert("Транзакция подтверждена.");
         } catch (err) {
             console.error("Ошибка транзакции:", err);
+
             alert("Произошла ошибка при отправке транзакции.");
         }
     };
@@ -117,7 +121,7 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
 
     return (
         <>
-            <div className="min-h-[450px] min-w-[500px] relative  transition-all">
+            <div className="min-h-[530px] min-w-[500px] relative  transition-all">
 
                 <Dialog.Title as="header" className="relative">
                     <h2 className="text-center text-2xl font-bold desk-dialog:mx-16">
@@ -163,7 +167,6 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                                     data={networkList}
                                     getLabel={(item) => item.name}
                                 />
-
                             </div>
                             <div className="min-w-[12rem] flex-1">
                                 <ListBoxArray
@@ -266,6 +269,17 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
 
                 {activeTab === "transaction" && (
                     <>
+                        <div className="min-w-[12rem] flex-1">
+                            <ListBoxArray
+                                label="Network"
+                                placeholder="Select Network"
+                                selected={selectedNetwork}
+                                onChangeValue={setSelectedNetwork}
+                                data={networkList}
+                                getLabel={(item) => item.name}
+                            />
+                        </div>
+
                         <div className="mt-6 flex flex-wrap gap-5">
                             <div className="min-w-[12rem] flex-1">
                                 <ListBoxArray
@@ -278,8 +292,8 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                                 />
                             </div>
                         </div>
-                        <div className="mt-6 flex flex-wrap gap-5">
 
+                        <div className="mt-6 flex flex-wrap gap-5">
                             <div className="min-w-[12rem] flex-1">
                                 <ListBoxArray
                                     label="Recipient"
