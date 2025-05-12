@@ -12,21 +12,39 @@ interface WalletDialogContentProps {
     onClose: () => void;
 }
 
+export interface INetwork { id: string; name: string; tokenName: string; }
+export interface IWallet { id: string; name: string;  }
+
 
 
 export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
     const [activeTab, setActiveTab] = useState("balance");
-    const [selectedNetwork, setSelectedNetwork] = useState(null);
-    const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
+
+
     const [selectedSender, setSelectedSender] = useState<string | null>(null);
     const [selectedRecipient, setSelectedRecipient] = useState<string | null>(null);
     const [address, setAddress] = useState("");
     const [privateKey, setPrivateKey] = useState("");
     const [amount, setAmount] = useState("");
-    const [balance, setBalance] = useState(null);
+    const [balance, setBalance] = useState<string>("");
     const [activeBalance, setActiveBalance] = useState(false);
 
-    const [walletList, setWalletList] = useState([
+    const [selectedNetwork, setSelectedNetwork] = useState<INetwork | null>(null);
+    const [networkList, setNetworkList] = useState<INetwork[]>([
+        {
+            name: "Sepolia Testnet",
+            id: "https://sepolia.infura.io/v3/6113828fd8e8448f9a9e3fa7962e2cc6",
+            tokenName: "SepoliaETH"
+        },
+        {
+            name: "Goerli Testnet",
+            id: "https://goerli.infura.io/v3/your-infura-key",
+            tokenName: "GoerliETH"
+        },
+    ]);
+
+    const [selectedWallet, setSelectedWallet] = useState< IWallet | null>(null);
+    const [walletList, setWalletList] = useState<IWallet[]>([
         {
             name: "0x2Bc3E1bb6C3C68720b392733993Bfef7334d3cbe",
             id: "32f561a84be0480b20b69c8633b9ef48464e5bb863627209c502897e823427d3"
@@ -41,18 +59,7 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
         },
     ]);
 
-    const [networkList, setNetworkList] = useState([
-        {
-            name: "Sepolia Testnet",
-            id: "https://sepolia.infura.io/v3/6113828fd8e8448f9a9e3fa7962e2cc6",
-            tokenName: "SepoliaETH"
-        },
-        {
-            name: "Goerli Testnet",
-            id: "https://goerli.infura.io/v3/your-infura-key",
-            tokenName: "GoerliETH"
-        },
-    ]);
+
 
 
     const sendTransaction = async () => {
@@ -74,7 +81,7 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
         }
 
         try {
-            const provider = new JsonRpcProvider(selectedNetwork);
+            const provider = new JsonRpcProvider(selectedNetwork.id);
             const wallet = new ethers.Wallet(senderWallet.id, provider);
 
             const tx = await wallet.sendTransaction({
@@ -93,24 +100,31 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
 
 
     const getBalanceByWalletId = async (walletId: string) => {
-        const wallet = walletList.find(w => w.id === walletId);
-        if (!wallet) {
-            console.error("Кошелек не найден");
+        if (selectedNetwork) {
+            const wallet = walletList.find(w => w.id === walletId);
+            if (!wallet) {
+                console.error("Кошелек не найден");
+                return null;
+            }
+
+            return await getBalance(wallet.name, selectedNetwork.id);
+        } else {
             return null;
         }
-        return await getBalance(wallet.name, selectedNetwork);
     };
 
-    const getBalance = async (selectedWallet: string, selectedNetwork: string) => {
-        console.log(selectedNetwork)
+    const getBalance = async (selectedWalletName: string, selectedNetworkId: string) => {
+        console.log(selectedNetworkId)
 
         try {
-            const provider = new JsonRpcProvider(selectedNetwork);
-            const balanceWei = await provider.getBalance(selectedWallet);
-            const balanceEth = ethers.formatEther(balanceWei);
-            setBalance(parseFloat(balanceEth).toFixed(4));
-            setActiveBalance(true);
-            return balanceEth;
+            const provider = new JsonRpcProvider(selectedNetworkId);
+            const balanceWei = await provider.getBalance(selectedWalletName);
+            const balanceEth: string = ethers.formatEther(balanceWei);
+            if (balanceEth) {
+                setBalance(parseFloat(balanceEth).toFixed(4));
+                setActiveBalance(true);
+                return balanceEth;
+            }
         } catch (error) {
             console.error("Ошибка при получении баланса:", error);
             return null;
@@ -138,13 +152,6 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                     >
                         Balance
                     </button>
-                    {/*<button*/}
-                    {/*    onClick={() => setActiveTab("connect")}*/}
-                    {/*    data-app-active={activeTab === "connect"}*/}
-                    {/*    className="px-4 py-2 font-medium text-base rounded-full border hover:bg-blue-high/10 data-[app-active=true]:bg-blue-high/10"*/}
-                    {/*>*/}
-                    {/*    Connect*/}
-                    {/*</button>*/}
                     <button
                         onClick={() => setActiveTab("transaction")}
                         data-app-active={activeTab === "transaction"}
@@ -162,25 +169,29 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                                 <ListBoxArray
                                     label="Network"
                                     placeholder="Select Network"
-                                    selected={selectedNetwork}
-                                    onChangeValue={setSelectedNetwork}
+                                    initValue={selectedNetwork}
+                                    onChangeValue={(value) => {
+                                        setSelectedNetwork(value);
+                                        setBalance("");
+                                    }}
                                     data={networkList}
-                                    getLabel={(item) => item.name}
                                 />
                             </div>
                             <div className="min-w-[12rem] flex-1">
                                 <ListBoxArray
                                     label="Wallet"
                                     placeholder="Select Wallet"
-                                    selected={selectedWallet}
-                                    onChangeValue={setSelectedWallet}
+                                    initValue={selectedWallet}
+                                    onChangeValue={(value) => {
+                                        setSelectedWallet(value);
+                                        setBalance("");
+                                    }}
                                     data={walletList}
-                                    getLabel={(item) => item.name}
                                 />
                             </div>
                         </div>
 
-                        {activeBalance === true && (
+                        {balance !== "" && (
                             <div className="mt-5 rounded-2.5xl border border-grey-high px-6 py-3 text-center text-lg desk-dialog:mx-32">
                                 Balance: {" "}
                                 <span className="font-bold text-blue-high">{balance}</span>
@@ -202,7 +213,7 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                                     if (!selectedWallet) return alert("Select a wallet");
                                     if (!selectedNetwork) return alert("Select a network");
 
-                                    await getBalanceByWalletId(selectedWallet);
+                                    await getBalanceByWalletId(selectedWallet.id);
                                 }}
                                 className="flex-1 rounded-half bg-blue-high px-16 py-3 text-dim-black hover:bg-blue-high/80 sm:flex-initial"
                             >

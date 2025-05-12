@@ -5,14 +5,15 @@ import { Listbox as ImplListBox, Transition } from "@headlessui/react";
 import SelectDownArrow from "assets/select-down-arrow.svg";
 
 import "./styles.css";
+import {INetwork} from '../WalletDialog.tsx';
 
 type ListboxArrayProps = {
   label?: React.ReactNode;
   placeholder?: string;
   btnClassName?: string;
-  onChangeValue: (value: string) => void;
+  onChangeValue: (value: any) => void;
   data: { name: string; id: string }[];
-  initValue?: { name: string; id: string };
+  initValue?: any;
 };
 
 export function ListBoxArray({
@@ -26,12 +27,12 @@ export function ListBoxArray({
                                ...divProps
                              }: ListboxArrayProps & Omit<React.HTMLProps<HTMLDivElement>, "data">) {
   const [selectedItem, setSelectedItem] = React.useState<
-      { name: string; id: string } | null
+      any | null
   >(initValue ?? null);
 
   useEffect(() => {
     if (selectedItem) {
-      onChangeValue(selectedItem.id);
+      onChangeValue(selectedItem);
     }
   }, [selectedItem]);
 
