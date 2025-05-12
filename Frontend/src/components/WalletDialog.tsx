@@ -36,6 +36,10 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
             name: "0x4cCE85dA450fC8D96B87671683B07297F13C13ff",
             id: "37cadf72c4f33fb624f5872c9262a70fc0f6a1b1d31f3cedb7cc20201508251d"
         },
+        {
+            name: "0xc8dBEDEd3f0f3fDA4DDa3fAF353C305Ad44cCbCA",
+            id: "fde292ba78cb9dde009d7eab8a262b7e0d61b39f839c6e597444fa332be79251"
+        },
     ]);
 
     const [networkList, setNetworkList] = useState([
@@ -50,6 +54,38 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
             tokenName: "GoerliETH"
         },
     ]);
+
+
+    const sendTransaction = async () => {
+        if (!selectedSender || !selectedRecipient || !selectedNetwork || !amount) {
+            alert("Пожалуйста, выберите отправителя, получателя, сеть и введите сумму");
+            return;
+        }
+
+        const senderWallet = walletList.find(w => w.id === selectedSender);
+        if (!senderWallet) {
+            alert("Отправитель не найден в списке");
+            return;
+        }
+
+        try {
+            const provider = new JsonRpcProvider(selectedNetwork);
+            const wallet = new ethers.Wallet(senderWallet.id, provider); // id — это приватный ключ
+
+            const tx = await wallet.sendTransaction({
+                to: selectedRecipient,
+                value: ethers.parseEther(amount), // преобразование суммы в wei
+            });
+
+            console.log("Транзакция отправлена:", tx.hash);
+            alert(`Транзакция отправлена. Hash: ${tx.hash}`);
+            await tx.wait(); // Ждём подтверждение
+            alert("Транзакция подтверждена.");
+        } catch (err) {
+            console.error("Ошибка транзакции:", err);
+            alert("Произошла ошибка при отправке транзакции.");
+        }
+    };
 
 
     const getBalanceByWalletId = async (walletId: string) => {
@@ -98,13 +134,13 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                     >
                         Balance
                     </button>
-                    <button
-                        onClick={() => setActiveTab("connect")}
-                        data-app-active={activeTab === "connect"}
-                        className="px-4 py-2 font-medium text-base rounded-full border hover:bg-blue-high/10 data-[app-active=true]:bg-blue-high/10"
-                    >
-                        Connect
-                    </button>
+                    {/*<button*/}
+                    {/*    onClick={() => setActiveTab("connect")}*/}
+                    {/*    data-app-active={activeTab === "connect"}*/}
+                    {/*    className="px-4 py-2 font-medium text-base rounded-full border hover:bg-blue-high/10 data-[app-active=true]:bg-blue-high/10"*/}
+                    {/*>*/}
+                    {/*    Connect*/}
+                    {/*</button>*/}
                     <button
                         onClick={() => setActiveTab("transaction")}
                         data-app-active={activeTab === "transaction"}
@@ -174,59 +210,59 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                     </>
                 )}
 
-                {activeTab === "connect" && (
-                    <>
-                        <div className="mt-5 flex flex-wrap gap-5">
-                            <InputComponent
-                                label="Address"
-                                onChange={setAddress}
-                                placeholder="Enter Address"
-                                type="text"
-                                style="min-w-full"
-                            />
-                        </div>
+                {/*{activeTab === "connect" && (*/}
+                {/*    <>*/}
+                {/*        <div className="mt-5 flex flex-wrap gap-5">*/}
+                {/*            <InputComponent*/}
+                {/*                label="Address"*/}
+                {/*                onChange={setAddress}*/}
+                {/*                placeholder="Enter Address"*/}
+                {/*                type="text"*/}
+                {/*                style="min-w-full"*/}
+                {/*            />*/}
+                {/*        </div>*/}
 
-                        <div className="mt-5 flex flex-wrap gap-5">
-                            <InputComponent
-                                label="Private key"
-                                onChange={setPrivateKey}
-                                placeholder="Enter Private Key"
-                                type="text"
-                                style="min-w-full"
-                            />
-                        </div>
+                {/*        <div className="mt-5 flex flex-wrap gap-5">*/}
+                {/*            <InputComponent*/}
+                {/*                label="Private key"*/}
+                {/*                onChange={setPrivateKey}*/}
+                {/*                placeholder="Enter Private Key"*/}
+                {/*                type="text"*/}
+                {/*                style="min-w-full"*/}
+                {/*            />*/}
+                {/*        </div>*/}
 
-                        <footer className="mt-20 flex justify-center gap-x-7 absolute bottom-5 w-full left-0">
-                            <button
-                                onClick={onClose}
-                                className="flex-1 rounded-half bg-grey-high px-16 py-3 text-dim-white hover:bg-blue-high/10 sm:flex-initial"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => {
-                                    if (!address || !privateKey) return;
+                {/*        <footer className="mt-20 flex justify-center gap-x-7 absolute bottom-5 w-full left-0">*/}
+                {/*            <button*/}
+                {/*                onClick={onClose}*/}
+                {/*                className="flex-1 rounded-half bg-grey-high px-16 py-3 text-dim-white hover:bg-blue-high/10 sm:flex-initial"*/}
+                {/*            >*/}
+                {/*                Cancel*/}
+                {/*            </button>*/}
+                {/*            <button*/}
+                {/*                onClick={() => {*/}
+                {/*                    if (!address || !privateKey) return;*/}
 
-                                    const exists = walletList.some(
-                                        (item) => item.name === address || item.id === privateKey
-                                    );
+                {/*                    const exists = walletList.some(*/}
+                {/*                        (item) => item.name === address || item.id === privateKey*/}
+                {/*                    );*/}
 
-                                    if (!exists) {
-                                        setWalletList((prev) => [...prev, { name: address, id: privateKey }]);
-                                    }
+                {/*                    if (!exists) {*/}
+                {/*                        setWalletList((prev) => [...prev, { name: address, id: privateKey }]);*/}
+                {/*                    }*/}
 
-                                    setAddress("");
-                                    setPrivateKey("");
-                                }}
+                {/*                    setAddress("");*/}
+                {/*                    setPrivateKey("");*/}
+                {/*                }}*/}
 
-                                className="flex-1 rounded-half bg-blue-high px-16 py-3 text-dim-black hover:bg-blue-high/80 sm:flex-initial"
-                            >
-                                Connect Wallet
-                            </button>
+                {/*                className="flex-1 rounded-half bg-blue-high px-16 py-3 text-dim-black hover:bg-blue-high/80 sm:flex-initial"*/}
+                {/*            >*/}
+                {/*                Connect Wallet*/}
+                {/*            </button>*/}
 
-                        </footer>
-                    </>
-                )}
+                {/*        </footer>*/}
+                {/*    </>*/}
+                {/*)}*/}
 
                 {activeTab === "transaction" && (
                     <>
@@ -273,7 +309,9 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
                             >
                                 Cancel
                             </button>
-                            <button className="flex-1 rounded-half bg-blue-high px-16 py-3 text-dim-black hover:bg-blue-high/80 sm:flex-initial">
+                            <button
+                                onClick={sendTransaction}
+                                className="flex-1 rounded-half bg-blue-high px-16 py-3 text-dim-black hover:bg-blue-high/80 sm:flex-initial">
                                 Send
                             </button>
                         </footer>
