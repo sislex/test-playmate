@@ -83,6 +83,8 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
 
             await tx.wait(); // wait load transaction
             setIsTransactionLoading(false);
+        } catch {
+
         }
     };
 
