@@ -67,7 +67,7 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
 
     const sendTransaction = async () => {
         if (!selectedSender || !selectedRecipient || !selectedNetwork || !amount) {
-            alert("Пожалуйста, выберите отправителя, получателя, сеть и введите сумму");
+            alert("fill in all fields");
             return;
         }
 
@@ -83,11 +83,6 @@ export function WalletDialogContent({ onClose }: WalletDialogContentProps) {
 
             await tx.wait(); // wait load transaction
             setIsTransactionLoading(false);
-            alert("Транзакция подтверждена.");
-        } catch (err) {
-            console.error("Ошибка транзакции:", err);
-
-            alert("Произошла ошибка при отправке транзакции.");
         }
     };
 
