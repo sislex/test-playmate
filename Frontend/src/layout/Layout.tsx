@@ -2,7 +2,7 @@ import React, { Component, useEffect, useState } from "react";
 import "./styles.css";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import BarLoader from "react-spinners/BarLoader";
-import { Menu, Transition } from "@headlessui/react";
+import {Dialog, Menu, Transition} from '@headlessui/react';
 import { commonTransitionProps } from "components/PanelTransition";
 import { NotificationsTarget } from "./Notifications";
 import { Sidebar } from "./Sidebar";
@@ -11,6 +11,9 @@ import profileImg from "assets/profile.jpg";
 import Hamburger from "assets/hamburger.svg";
 import { useMenu } from "utils";
 import * as icons from "./icons";
+import {DialogSheet} from '../components/DialogSheet.tsx';
+
+import { WalletDialogContent } from "../components/WalletDialog.tsx";
 
 function UserMenuContent() {
   const navigate = useNavigate();
@@ -93,7 +96,7 @@ function UserProfile({userData} : any) {
 export function Layout() {
   let [open, setOpen] = React.useState(false);
 
-  const [loaded, setLoaded] = useState(false);    
+  const [loaded, setLoaded] = useState(false);
 
   const [userData, setUserData] = useState("");
   const [events, setEvents] = useState([]);
@@ -119,9 +122,9 @@ export function Layout() {
           if (data.data.userType == "Admin") {
               setAdmin(true);
           }
-  
+
           setUserData(data.data);
-          
+
           if (data.data == "token expired") {
             if (window.location.pathname !== "/login") {
               window.localStorage.clear();
@@ -157,7 +160,7 @@ export function Layout() {
         setEvents(data.data);
     });
   }, [userData]);
-  
+
   useEffect(() => {
     if(!events) return;
 
@@ -187,7 +190,7 @@ export function Layout() {
   return (
     <>
       {!loaded && (
-          <BarLoader color="#5ce5e2" 
+          <BarLoader color="#5ce5e2"
           cssOverride={{
             display: "block",
             margin: "10vh auto",
@@ -212,17 +215,19 @@ function ContentPane({ setOpen, userData, events, friendRequests }: any) {
   const [actions, setActions] = React.useState<React.ReactNode>(null);
   const [notifications, setNotifications] = useState([]);
 
+  let [isWalletOpen, setIsWalletOpen] = React.useState(false);
+
   useEffect(() => {
     // Set type in events array to "eventInvite"
     events.forEach((event: any) => {
       event.type = "eventInvite";
     });
-  
+
     // Set type in friend requests array to "friendRequest"
     friendRequests.forEach((friendRequest: any) => {
       friendRequest.type = "friendRequest";
     });
-  
+
     // Combine events and friend requests into notifications array
     let notificationsTemp = events.concat(friendRequests);
     setNotifications(notificationsTemp)
@@ -252,6 +257,42 @@ function ContentPane({ setOpen, userData, events, friendRequests }: any) {
           <NotificationsTarget notifications={notifications} setNotifications={setNotifications} />
           <div className='hidden items-center desktop:flex'>
             <UserProfile userData={userData} />
+          </div>
+          <div>
+            <button className='ml-8 box-content flex cursor-pointer select-none items-center rounded-md p-2 transition-colors hover:bg-blue-high/10'
+                    onClick={() => {setIsWalletOpen(true)}}>
+              Wallet
+            </button>
+
+            <Transition show={isWalletOpen} as={React.Fragment}>
+              <Dialog onClose={() => {}}>
+                <Transition.Child
+                  as={React.Fragment}
+                  enter='ease-out duration-300'
+                  enterFrom='opacity-0'
+                  enterTo='opacity-100'
+                  leave='ease-in duration-200'
+                  leaveFrom='opacity-100'
+                  leaveTo='opacity-0'
+                >
+                  <div  className='fixed inset-0 bg-black/30' aria-hidden='true' />
+                </Transition.Child>
+                <Transition.Child
+                  as={React.Fragment}
+                  enter='ease-out duration-300'
+                  enterFrom='opacity-0 scale-95'
+                  enterTo='opacity-100 scale-100'
+                  leave='ease-in duration-200'
+                  leaveFrom='opacity-100 scale-100'
+                  leaveTo='opacity-0 scale-95'
+                >
+                  <DialogSheet>
+                    <WalletDialogContent onClose={() => setIsWalletOpen(false)} />
+                  </DialogSheet>
+                </Transition.Child>
+              </Dialog>
+            </Transition>
+
           </div>
         </div>
       </header>

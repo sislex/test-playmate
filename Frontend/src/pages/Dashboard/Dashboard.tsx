@@ -89,7 +89,7 @@ function SideView({events} : any) {
 
 export function Dashboard() {
 
-  const [loaded, setLoaded] = useState(false);    
+  const [loaded, setLoaded] = useState(false);
 
   const [userData, setUserData] = useState("");
   const [events, setEvents] = useState([]);
@@ -115,9 +115,9 @@ export function Dashboard() {
           if (data.data.userType == "Admin") {
               setAdmin(true);
           }
-  
+
           setUserData(data.data);
-          
+
           if (data.data == "token expired") {
             if (window.location.pathname !== "/login") {
               window.localStorage.clear();
@@ -150,7 +150,7 @@ export function Dashboard() {
         setEvents(data.data);
     });
   }, [userData]);
-  
+
   useEffect(() => {
     if(!events) return;
 
