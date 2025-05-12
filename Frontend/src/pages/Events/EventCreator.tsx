@@ -18,7 +18,7 @@ interface SelectEventTypeProps {
   onProceed: () => void;
 }
 
-function SelectEventType({
+export function SelectEventType({
   selectedType,
   setSelectedType,
   ...props
